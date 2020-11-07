@@ -23,4 +23,4 @@ all:
 
 clean:
 	cd libdeflate; make clean; rm -f gzip.wasm
-	rm -r libdeflate.wasm
+	rm -f libdeflate.wasm
