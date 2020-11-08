@@ -1,6 +1,8 @@
 all:
-	cd libdeflate; emmake make
-	emcc libdeflate/libdeflate.a -s EXPORTED_FUNCTIONS="[\
+	cd libdeflate; emmake make; rm -f gzip.wasm
+	mkdir -p build
+	emcc libdeflate.c libdeflate/libdeflate.a \
+		-s EXPORTED_FUNCTIONS="[\
 		'_libdeflate_alloc_compressor', \
 		'_libdeflate_deflate_compress', \
 		'_libdeflate_deflate_compress_bound', \
@@ -18,9 +20,11 @@ all:
 		'_libdeflate_gzip_decompress_ex', \
 		'_libdeflate_free_decompressor', \
 		'_libdeflate_adler32', \
-		'_libdeflate_crc32' \
-	]" -o libdeflate.wasm
+		'_libdeflate_crc32', \
+		'_malloc', \
+		'_free' \
+	]" -s STANDALONE_WASM -Os -o build/libdeflate.wasm
 
 clean:
 	cd libdeflate; make clean; rm -f gzip.wasm
-	rm -f libdeflate.wasm
+	rm -rf build/

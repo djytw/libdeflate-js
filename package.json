@@ -1,0 +1,27 @@
+{
+  "name": "libdeflate-js",
+  "version": "1.0.0",
+  "description": "libdeflate binding for JavaScript, using WebAssembly",
+  "main": "build/libdeflate.js",
+  "types": "build/libdeflate.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "make && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/djytw/libdeflate-js.git"
+  },
+  "keywords": [
+    "libdeflate",
+    "zlib",
+    "gzip",
+    "WebAssembly"
+  ],
+  "author": "djytw",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/djytw/libdeflate-js/issues"
+  },
+  "homepage": "https://github.com/djytw/libdeflate-js#readme"
+}
