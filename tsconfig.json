@@ -1,11 +1,11 @@
 {
     "compilerOptions": {
-        "rootDir": "./",
+        "rootDir": "./src/",
         "outDir": "./build/",
         "target": "esnext",
         "strict": true,
         "declaration": true
     },
-    "include": ["*.ts"],
+    "include": ["src/**.ts"],
     "exclude": ["node_modules"]
 }
