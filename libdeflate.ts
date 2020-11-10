@@ -115,6 +115,7 @@ export class LibDeflate {
 export class LibDeflateCompressor extends LibDeflate {
     private compressor: number;
     private compression_level: number;
+    private locked: boolean;
 
     /**
      * Create a new libdeflate compressor with the specified compression level.
@@ -124,12 +125,17 @@ export class LibDeflateCompressor extends LibDeflate {
         super();
         this.compression_level = compression_level;
         this.compressor = LibDeflate.native.libdeflate_alloc_compressor(compression_level);
+        this.locked = false;
     }
 
     private checkNotClosed() {
         if (this.compressor == 0) {
             throw 'Compressor is closed.';
         }
+        if (this.locked) {
+            throw 'This compressor is currently busy. A single compressor is not safe to use simultaneously.';
+        }
+        this.locked = true;
     }
 
     private _compress(fun: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<number> {
@@ -144,6 +150,7 @@ export class LibDeflateCompressor extends LibDeflate {
             out_data.set(LibDeflate.getValue(out_addr, result));
             LibDeflate.free(out_addr);
             resolve(result);
+            this.locked = false;
         })
     }
 
@@ -263,6 +270,7 @@ export class LibDeflateCompressor extends LibDeflate {
 
 export class LibDeflateDecompressor extends LibDeflate {
     private decompressor: number;
+    private locked: boolean;
 
     /**
      * Create a new libdeflate decompressor.
@@ -270,12 +278,17 @@ export class LibDeflateDecompressor extends LibDeflate {
     constructor() {
         super();
         this.decompressor = LibDeflate.native.libdeflate_alloc_decompressor();
+        this.locked = false;
     }
 
     private checkNotClosed() {
         if (this.decompressor == 0) {
             throw 'Decompressor is closed.';
         }
+        if (this.locked) {
+            throw 'This decompressor is currently busy. A single decompressor is not safe to use simultaneously.';
+        }
+        this.locked = true;
     }
     
     private _decompress(func: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number]> {
@@ -293,6 +306,7 @@ export class LibDeflateDecompressor extends LibDeflate {
             LibDeflate.free(in_addr);
             LibDeflate.free(out_addr);
             resolve([result, result_length]);
+            this.locked = false;
         })
     }
     
@@ -314,6 +328,7 @@ export class LibDeflateDecompressor extends LibDeflate {
             LibDeflate.free(in_addr);
             LibDeflate.free(out_addr);
             resolve([result, result_in_length, result_out_length]);
+            this.locked = false;
         })
     }
 
