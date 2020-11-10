@@ -23,5 +23,9 @@
   "bugs": {
     "url": "https://github.com/djytw/libdeflate-js/issues"
   },
-  "homepage": "https://github.com/djytw/libdeflate-js#readme"
+  "homepage": "https://github.com/djytw/libdeflate-js#readme",
+  "dependencies": {
+    "@types/node": "^14.14.7"
+  },
+  "type": "module"
 }
