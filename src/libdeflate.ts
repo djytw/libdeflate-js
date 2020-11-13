@@ -1,9 +1,16 @@
 
-export class LibDeflate {
+export default class LibDeflate {
     protected static native: any;
+    public static DecompressorResult: typeof LibDeflateDecompressorResult;
+    public static Decompressor: typeof LibDeflateDecompressor;
+    public static Compressor: typeof LibDeflateCompressor;
 
     static async initialize() : Promise<void> {
         return new Promise(async resolve => {
+
+            LibDeflate.DecompressorResult = LibDeflateDecompressorResult;
+            LibDeflate.Decompressor = LibDeflateDecompressor;
+            LibDeflate.Compressor = LibDeflateCompressor;
 
             if (typeof fetch === 'function') {
                 // if support fetch
@@ -340,7 +347,7 @@ export class LibDeflateDecompressor extends LibDeflate {
         this.locked = true;
     }
     
-    private _decompress(func: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number]> {
+    private _decompress(func: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number]> {
         this.checkNotClosed();
         let self = this;
         return new Promise(async resolve => {
@@ -349,7 +356,7 @@ export class LibDeflateDecompressor extends LibDeflate {
             let result_length_addr = LibDeflate.alloc(4);
             let funct = LibDeflate.native[func];
             let result = funct(self.decompressor, in_addr, in_data.byteLength, out_addr, out_data.byteLength, result_length_addr);
-            if (result !== DecompressorResult.LIBDEFLATE_SUCCESS) {
+            if (result !== LibDeflateDecompressorResult.LIBDEFLATE_SUCCESS) {
                 LibDeflate.free(result_length_addr);
                 LibDeflate.free(in_addr);
                 LibDeflate.free(out_addr);
@@ -367,7 +374,7 @@ export class LibDeflateDecompressor extends LibDeflate {
         })
     }
     
-    private _decompress_ex(func: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number, number]> {
+    private _decompress_ex(func: string, in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number, number]> {
         this.checkNotClosed();
         let self = this;
         return new Promise(async resolve => {
@@ -377,7 +384,7 @@ export class LibDeflateDecompressor extends LibDeflate {
             let result_out_length_addr = LibDeflate.alloc(4);
             let funct = LibDeflate.native[func];
             let result = funct(self.decompressor, in_addr, in_data.byteLength, out_addr, out_data.byteLength, result_in_length_addr, result_out_length_addr);
-            if (result !== DecompressorResult.LIBDEFLATE_SUCCESS) {
+            if (result !== LibDeflateDecompressorResult.LIBDEFLATE_SUCCESS) {
                 LibDeflate.free(result_in_length_addr);
                 LibDeflate.free(result_out_length_addr);
                 LibDeflate.free(in_addr);
@@ -414,7 +421,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of uncompressed data if result is
      * LIBDEFLATE_SUCCESS. 
      */
-    public deflate_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number]> {
+    public deflate_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number]> {
         return this._decompress("libdeflate_deflate_decompress", in_data, out_data);
     }
 
@@ -428,7 +435,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of consumed input data, the third is the size
      * of uncompressed data if result is LIBDEFLATE_SUCCESS. 
      */
-    public deflate_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number, number]> {
+    public deflate_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number, number]> {
         return this._decompress_ex("libdeflate_deflate_decompress_ex", in_data, out_data);
     }
 
@@ -442,7 +449,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of uncompressed data if result is
      * LIBDEFLATE_SUCCESS. 
      */
-    public zlib_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number]> {
+    public zlib_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number]> {
         return this._decompress("libdeflate_zlib_decompress", in_data, out_data);
     }
 
@@ -457,7 +464,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of consumed input data, the third is the size
      * of uncompressed data if result is LIBDEFLATE_SUCCESS. 
      */
-    public zlib_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number, number]> {
+    public zlib_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number, number]> {
         return this._decompress_ex("libdeflate_zlib_decompress_ex", in_data, out_data);
     }
 
@@ -471,7 +478,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of uncompressed data if result is
      * LIBDEFLATE_SUCCESS. 
      */
-    public gzip_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number]> {
+    public gzip_decompress(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number]> {
         return this._decompress("libdeflate_gzip_decompress", in_data, out_data);
     }
 
@@ -485,7 +492,7 @@ export class LibDeflateDecompressor extends LibDeflate {
      * See enum DecompressorResult for detail. The second element is the size of consumed input data, the third is the size
      * of uncompressed data if result is LIBDEFLATE_SUCCESS. 
      */
-    public gzip_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[DecompressorResult, number, number]> {
+    public gzip_decompress_ex(in_data: Uint8Array, out_data: Uint8Array) : Promise<[LibDeflateDecompressorResult, number, number]> {
         return this._decompress_ex("libdeflate_gzip_decompress_ex", in_data, out_data);
     }
 
@@ -499,7 +506,7 @@ export class LibDeflateDecompressor extends LibDeflate {
     }
 }
 
-export enum DecompressorResult {
+export enum LibDeflateDecompressorResult {
     /* Decompression was successful.  */
     LIBDEFLATE_SUCCESS = 0,
 

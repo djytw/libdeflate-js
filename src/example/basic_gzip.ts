@@ -1,4 +1,4 @@
-import {LibDeflate, DecompressorResult, LibDeflateCompressor, LibDeflateDecompressor} from '../libdeflate.js';
+import LibDeflate from '../libdeflate.js';
 
 // nodejs main entry
 if (process != undefined) {
@@ -48,6 +48,7 @@ function node_main(process: NodeJS.Process) : Promise<void> {
             console.log("\x1b[31mCRC-32 mismatch!\x1b[0m");
         }
 
+        resolve();
     });
 }
 
@@ -56,7 +57,7 @@ function gzip(data: Uint8Array) : Promise<Uint8Array> {
 
     return new Promise(async resolve => {
 
-        let compressor = new LibDeflateCompressor(12);
+        let compressor = new LibDeflate.Compressor(12);
 
         let output_bound = compressor.gzip_bound(data.byteLength);
         let output_buffer = new Uint8Array(output_bound);
@@ -81,20 +82,20 @@ function ungzip(data: Uint8Array) : Promise<Uint8Array> {
 
     return new Promise(async resolve => {
     
-        let decompressor = new LibDeflateDecompressor();
+        let decompressor = new LibDeflate.Decompressor();
 
         // Assumes uncompressed data is smaller than 1MB
         let output_bound = 1 << 16;
         let output_buffer = new Uint8Array(output_bound);
     
         let [result, output_size] = await decompressor.gzip_decompress(data, output_buffer);
-        if (result == DecompressorResult.LIBDEFLATE_BAD_DATA) {
+        if (result == LibDeflate.DecompressorResult.LIBDEFLATE_BAD_DATA) {
             throw 'The input is not a valid gzip file.';
         }
-        if (result == DecompressorResult.LIBDEFLATE_INSUFFICIENT_SPACE) {
+        if (result == LibDeflate.DecompressorResult.LIBDEFLATE_INSUFFICIENT_SPACE) {
             throw 'The basic example only supports a maximum of 1MB of uncompressed data.';
         }
-        if (result != DecompressorResult.LIBDEFLATE_SUCCESS) {
+        if (result != LibDeflate.DecompressorResult.LIBDEFLATE_SUCCESS) {
             throw 'Internal error';
         }
 

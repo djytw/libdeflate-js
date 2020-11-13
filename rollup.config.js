@@ -12,7 +12,8 @@ export default [
         output: {
             file: 'dist/libdeflate.js',
             format: 'umd',
-            name: 'LibDeflate'
+            name: 'LibDeflate',
+            exports: 'named'
         },
         external: ['path', 'fs', 'url']
     },
