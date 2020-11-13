@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "rootDir": "../",
+        "outDir": "../../dist/",
+        "target": "esnext",
+        "strict": true,
+        "module": "esnext",
+        "moduleResolution": "node",
+        "composite": true
+    },
+    "include": ["**.ts", "../libdeflate.ts"],
+}
