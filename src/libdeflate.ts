@@ -2,9 +2,48 @@
 export class LibDeflate {
     protected static native: any;
 
-    static initialize() {
-        WebAssembly.instantiateStreaming(fetch('libdeflate.wasm'), {}).then(obj => {
-            LibDeflate.native = obj.instance.exports;
+    static async initialize() : Promise<void> {
+        return new Promise(async resolve => {
+
+            if (typeof fetch === 'function') {
+                // if support fetch
+                fetch('libdeflate.wasm').then(response => 
+                    response.arrayBuffer()
+                ).then(bytes => 
+                    WebAssembly.instantiate(bytes)
+                ).then(obj => {
+                    LibDeflate.native = obj.instance.exports;
+                    resolve();
+                });
+            } else if (process !== undefined) {
+                // nodejs
+                (async () => {
+                    const path = await import('path');
+                    const url = await import('url');
+                    const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+                    const wasm = path.join(__dirname, 'libdeflate.wasm');
+                    import('fs').then(fs => 
+                        fs.readFileSync(wasm)
+                    ).then(bytes => 
+                        WebAssembly.instantiate(bytes)
+                    ).then(obj => {
+                        LibDeflate.native = obj.instance.exports;
+                        resolve();
+                    });
+                })()
+            } else {
+                let req = new XMLHttpRequest();
+                req.open('GET', 'libdeflate.wasm', true);
+                req.responseType = 'arraybuffer';
+                req.onload = () => {
+                    WebAssembly.instantiate(req.response).then(obj =>{
+                        LibDeflate.native = obj.instance.exports;
+                        resolve();
+                    });
+                }
+                req.send(null);
+            }
+
         });
     }
 
@@ -22,7 +61,7 @@ export class LibDeflate {
             init_value = 1;
         }
         if (buffer.constructor != Uint8Array || typeof init_value !== 'number') {
-            throw 'Invalid parameters. ';
+            throw 'LibDeflate: adler32: Invalid parameters. ';
         }
         let addr = this.alloc(buffer);
         let result = this.native.libdeflate_adler32(init_value, addr, buffer.byteLength);
@@ -44,7 +83,7 @@ export class LibDeflate {
             init_value = 0;
         }
         if (buffer.constructor != Uint8Array || typeof init_value !== 'number') {
-            throw 'Invalid parameters. ';
+            throw 'LibDeflate: crc32: Invalid parameters. ';
         }
         let addr = this.alloc(buffer);
         let result = this.native.libdeflate_crc32(init_value, addr, buffer.byteLength);
@@ -68,6 +107,9 @@ export class LibDeflate {
         let buffer = new Uint8Array(this.native.memory.buffer);
         if (data.constructor === Uint8Array) {
             let addr = this.native.malloc(data.byteLength);
+            if (addr == 0) {
+                throw 'Failed to allocate memory';
+            }
             buffer.set(data, addr);
             return addr;
         } else {
@@ -106,8 +148,8 @@ export class LibDeflate {
      * Get the int32 value of specified address. Internal use.
      */
     protected static getInt32(addr: number) : number {
-        let val = this.getValue(addr, 4);
-        let val32 = new Int32Array(val);
+        let val = new Uint8Array(this.getValue(addr, 4));
+        let val32 = new Int32Array(val.buffer);
         return val32[0];
     }
 }
@@ -147,10 +189,11 @@ export class LibDeflateCompressor extends LibDeflate {
             let func = LibDeflate.native[fun];
             let result = func(self.compressor, in_addr, in_data.byteLength, out_addr, out_data.byteLength);
             LibDeflate.free(in_addr);
-            out_data.set(LibDeflate.getValue(out_addr, result));
+            if (result > 0)
+                out_data.set(LibDeflate.getValue(out_addr, result));
             LibDeflate.free(out_addr);
-            resolve(result);
             this.locked = false;
+            resolve(result);
         })
     }
 
@@ -184,7 +227,9 @@ export class LibDeflateCompressor extends LibDeflate {
      */
     public deflate_bound(in_bytes: number) : number {
         this.checkNotClosed();
-        return LibDeflate.native.libdeflate_deflate_compress_bound(this.compressor, in_bytes);
+        let retval = LibDeflate.native.libdeflate_deflate_compress_bound(this.compressor, in_bytes);
+        this.locked = false;
+        return retval;
     }
 
     /**
@@ -214,7 +259,9 @@ export class LibDeflateCompressor extends LibDeflate {
      */
     public zlib_bound(in_bytes: number) : number {
         this.checkNotClosed();
-        return LibDeflate.native.libdeflate_zlib_compress_bound(this.compressor, in_bytes);
+        let retval = LibDeflate.native.libdeflate_zlib_compress_bound(this.compressor, in_bytes);
+        this.locked = false;
+        return retval;
     }
 
     /**
@@ -244,7 +291,9 @@ export class LibDeflateCompressor extends LibDeflate {
      */
     public gzip_bound(in_bytes: number) : number {
         this.checkNotClosed();
-        return LibDeflate.native.libdeflate_gzip_compress_bound(this.compressor, in_bytes);
+        let retval = LibDeflate.native.libdeflate_gzip_compress_bound(this.compressor, in_bytes);
+        this.locked = false;
+        return retval;
     }
 
     /**
@@ -300,13 +349,21 @@ export class LibDeflateDecompressor extends LibDeflate {
             let result_length_addr = LibDeflate.alloc(4);
             let funct = LibDeflate.native[func];
             let result = funct(self.decompressor, in_addr, in_data.byteLength, out_addr, out_data.byteLength, result_length_addr);
+            if (result !== DecompressorResult.LIBDEFLATE_SUCCESS) {
+                LibDeflate.free(result_length_addr);
+                LibDeflate.free(in_addr);
+                LibDeflate.free(out_addr);
+                this.locked = false;
+                resolve([result, 0]);
+                return;
+            }
             let result_length = LibDeflate.getInt32(result_length_addr);
             out_data.set(LibDeflate.getValue(out_addr, result_length));
             LibDeflate.free(result_length_addr);
             LibDeflate.free(in_addr);
             LibDeflate.free(out_addr);
-            resolve([result, result_length]);
             this.locked = false;
+            resolve([result, result_length]);
         })
     }
     
@@ -320,6 +377,15 @@ export class LibDeflateDecompressor extends LibDeflate {
             let result_out_length_addr = LibDeflate.alloc(4);
             let funct = LibDeflate.native[func];
             let result = funct(self.decompressor, in_addr, in_data.byteLength, out_addr, out_data.byteLength, result_in_length_addr, result_out_length_addr);
+            if (result !== DecompressorResult.LIBDEFLATE_SUCCESS) {
+                LibDeflate.free(result_in_length_addr);
+                LibDeflate.free(result_out_length_addr);
+                LibDeflate.free(in_addr);
+                LibDeflate.free(out_addr);
+                this.locked = false;
+                resolve([result, 0, 0]);
+                return;
+            }
             let result_in_length = LibDeflate.getInt32(result_in_length_addr);
             let result_out_length = LibDeflate.getInt32(result_out_length_addr);
             out_data.set(LibDeflate.getValue(out_addr, result_out_length));
@@ -327,8 +393,8 @@ export class LibDeflateDecompressor extends LibDeflate {
             LibDeflate.free(result_out_length_addr);
             LibDeflate.free(in_addr);
             LibDeflate.free(out_addr);
-            resolve([result, result_in_length, result_out_length]);
             this.locked = false;
+            resolve([result, result_in_length, result_out_length]);
         })
     }
 
@@ -449,5 +515,3 @@ export enum DecompressorResult {
      * bytes.  */
     LIBDEFLATE_INSUFFICIENT_SPACE = 3,
 }
-
-LibDeflate.initialize();
