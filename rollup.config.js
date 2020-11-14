@@ -1,20 +1,26 @@
-export default [
-    {
-        input: 'build/libdeflate.js',
+
+let files = ['libdeflate', 'example/basic'];
+
+let result = [];
+
+for (let file of files) {
+    result.push({
+        input: `build/${file}.js`,
         output: {
-            file: 'dist/libdeflate.module.js',
+            file: `dist/${file}.module.js`,
             format: 'esm'
         },
         external: ['path', 'fs', 'url']
-    },
-    {
-        input: 'build/libdeflate.js',
+    });
+    result.push({
+        input: `build/${file}.js`,
         output: {
-            file: 'dist/libdeflate.js',
-            format: 'umd',
-            name: 'LibDeflate',
+            file: `dist/${file}.js`,
+            format: 'es',
             exports: 'named'
         },
         external: ['path', 'fs', 'url']
-    },
-];
+    });
+}
+
+export default result;
