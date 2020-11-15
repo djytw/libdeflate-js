@@ -1,25 +1,73 @@
+import path from 'path';
+import { terser } from "rollup-plugin-terser";
+import replace from '@rollup/plugin-replace';
 
-let files = ['libdeflate', 'example/basic'];
+let files = [
+    ['libdeflate', 'LibDeflate'], 
+    ['example/basic', 'ExampleBasic'],
+];
+
+let importpath = path.join(__dirname, 'build/libdeflate');
+
+let nodemain_cjs = classname => `
+if (require !== undefined && require.main === module) {
+    ${classname}.node_main(process);
+}`;
+
+let nodemain_mjs = classname => `
+if (process != undefined) {
+    (async () => {
+        let path = await import('path');
+        let url = await import('url');
+        if (path.resolve(process.argv[1]) === url.fileURLToPath(import.meta.url)) {
+            ${classname}.node_main(process);
+        }
+    })()
+}`;
+
+let internal_footer = footer => {return {
+    transform: (code, id) => {
+        if (id == importpath + ".js") {
+            return null;
+        }
+        return code + footer;
+    }}
+}
 
 let result = [];
 
-for (let file of files) {
+for (const [file, classname] of files) {
     result.push({
         input: `build/${file}.js`,
         output: {
-            file: `dist/${file}.module.js`,
-            format: 'esm'
+            file: `dist/${file}.mjs`,
+            format: 'esm',
+            paths: { [importpath] : '../libdeflate.mjs' },
         },
-        external: ['path', 'fs', 'url']
+        plugins:[
+            replace({
+                'require': 'await import',
+                '__dirname': 'path.dirname((await import(\'url\')).fileURLToPath(import.meta.url))'
+            }),
+            internal_footer(nodemain_mjs(classname)),
+        ],
+        external: ['path', 'fs', 'url', '../libdeflate']
     });
     result.push({
         input: `build/${file}.js`,
         output: {
             file: `dist/${file}.js`,
-            format: 'es',
-            exports: 'named'
+            format: 'umd',
+            exports: 'default',
+            name: classname,
+            paths: { [importpath] : '../libdeflate.js' },
+            globals: { [importpath] : 'LibDeflate' },
         },
-        external: ['path', 'fs', 'url']
+        plugins:[
+            internal_footer(nodemain_cjs(classname)),
+            terser(),
+        ],
+        external: ['path', 'fs', 'url', '../libdeflate']
     });
 }
 

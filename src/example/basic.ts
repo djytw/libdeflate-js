@@ -1,12 +1,12 @@
-import LibDeflate from '../libdeflate.js';
+import LibDeflate from '../libdeflate';
 
 export default class ExampleBasic {
 
     public static node_main(process: NodeJS.Process) : Promise<void> {
         return new Promise(async resolve => {
     
-            const fs = await import("fs");
-            const path = await import("path");
+            const fs = require("fs");
+            const path = require("path");
             if (process.argv.length < 3) {
                 console.log(`Usage: node ${path.relative(process.cwd(), process.argv[1])} <file>`);
                 process.exit(-1);

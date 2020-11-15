@@ -24,20 +24,15 @@ export default class LibDeflate {
                 });
             } else if (process !== undefined) {
                 // nodejs
-                (async () => {
-                    const path = await import('path');
-                    const url = await import('url');
-                    const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-                    const wasm = path.join(__dirname, 'libdeflate.wasm');
-                    import('fs').then(fs => 
-                        fs.readFileSync(wasm)
-                    ).then(bytes => 
-                        WebAssembly.instantiate(bytes)
-                    ).then(obj => {
-                        LibDeflate.native = obj.instance.exports;
-                        resolve();
-                    });
-                })()
+                let wasm: any;
+                const path = require('path');
+                const fs = require('fs');
+                let file = path.join(__dirname, 'libdeflate.wasm');
+                wasm = fs.readFileSync(file);
+                WebAssembly.instantiate(wasm).then(obj => {
+                    LibDeflate.native = obj.instance.exports;
+                    resolve();
+                });
             } else {
                 let req = new XMLHttpRequest();
                 req.open('GET', 'libdeflate.wasm', true);
@@ -161,7 +156,7 @@ export default class LibDeflate {
     }
 }
 
-export class LibDeflateCompressor extends LibDeflate {
+class LibDeflateCompressor extends LibDeflate {
     private compressor: number;
     private compression_level: number;
     private locked: boolean;
@@ -324,7 +319,7 @@ export class LibDeflateCompressor extends LibDeflate {
     }
 }
 
-export class LibDeflateDecompressor extends LibDeflate {
+class LibDeflateDecompressor extends LibDeflate {
     private decompressor: number;
     private locked: boolean;
 
@@ -506,7 +501,7 @@ export class LibDeflateDecompressor extends LibDeflate {
     }
 }
 
-export enum LibDeflateDecompressorResult {
+enum LibDeflateDecompressorResult {
     /* Decompression was successful.  */
     LIBDEFLATE_SUCCESS = 0,
 
