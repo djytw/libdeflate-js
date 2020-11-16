@@ -1,5 +1,4 @@
 import path from 'path';
-import { terser } from "rollup-plugin-terser";
 import replace from '@rollup/plugin-replace';
 
 let files = [
@@ -65,7 +64,6 @@ for (const [file, classname] of files) {
         },
         plugins:[
             internal_footer(nodemain_cjs(classname)),
-            terser(),
         ],
         external: ['path', 'fs', 'url', '../libdeflate']
     });
