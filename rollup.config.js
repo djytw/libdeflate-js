@@ -25,14 +25,14 @@ if (process != undefined) {
     })()
 }`;
 
-let internal_footer = footer => {return {
+let internal_footer = footer => ({
     transform: (code, id) => {
         if (id == importpath + ".js") {
             return null;
         }
         return code + footer;
-    }}
-}
+    }
+})
 
 let result = [];
 
