@@ -1,5 +1,5 @@
 all:
-	cd libdeflate; emmake make; rm -f gzip.wasm
+	cd libdeflate; make CC=emcc; rm -f gzip.wasm
 	mkdir -p build
 	mkdir -p dist
 	emcc libdeflate/libdeflate.a \
